@@ -37,3 +37,4 @@ out/
 .vscode/
 
 global_perf*
+.DS_Store
