@@ -2,8 +2,14 @@
   "orchestratorUrl": "http://localhost:8080/report/result/",
   "readerTargetUrl": "https://dbdemo.akamaidemo.work/app/?topic=",
   "readerTargetMethod": "GET",
+  "readerTargetPathType": "append-key",
   "writerTargetUrl": "https://dbdemo.akamaidemo.work/put/?topic=",
   "writerTargetMethod": "PUT",
+  "writerTargetPathType": "append-key",
+  "writerTargetHeader": {
+    "key": "Authorization",
+    "value": "---key"
+  },
   "writer": {
     "url": "http://localhost:8090/start",
     "locationName": "chicago"

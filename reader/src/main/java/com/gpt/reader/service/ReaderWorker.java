@@ -26,10 +26,22 @@ public class ReaderWorker extends TimerTask {
 
     public void run() {
         try {
-            String url = this.instruction.getReaderTargetUrl() + instruction.getTestValue().getKey();
+            String url;
+            if ("append-key".equals(instruction.getReaderTargetPathType())) {
+                url = this.instruction.getReaderTargetUrl() + instruction.getTestValue().getKey();
+            } else {
+                url = this.instruction.getReaderTargetUrl();
+            }
+
             KeyValue httpResult = restClient
                     .method(HttpMethod.valueOf(this.instruction.getReaderTargetMethod()))
                     .uri(url)
+                    .headers(headers -> {
+                        if (this.instruction.getReaderTargetHeader() != null) {
+                            headers.set(this.instruction.getReaderTargetHeader().getKey(),
+                                    this.instruction.getReaderTargetHeader().getValue());
+                        }
+                    })
                     .retrieve()
                     .body(KeyValue.class);
 

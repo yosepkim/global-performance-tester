@@ -15,6 +15,8 @@ public class RunInstruction {
     private String readerTargetMethod;
     private String writerTargetUrl;
     private String writerTargetMethod;
+    private String writerTargetPathType;
+    private KeyValue writerTargetHeader;
     private Instant startTime;
     private KeyValue testValue;
 }

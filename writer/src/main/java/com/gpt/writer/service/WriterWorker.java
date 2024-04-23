@@ -3,6 +3,7 @@ package com.gpt.writer.service;
 import com.gpt.writer.model.Result;
 import com.gpt.writer.model.Run;
 import com.gpt.writer.model.RunInstruction;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.client.RestClient;
 
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.TimerTask;
+import java.util.function.Consumer;
 
 public class WriterWorker extends TimerTask {
     private final RunInstruction instruction;
@@ -24,10 +26,23 @@ public class WriterWorker extends TimerTask {
     public void run() {
         try {
             RestClient restClient = RestClient.create();
-            String url = this.instruction.getWriterTargetUrl() + instruction.getTestValue().getKey();
+
+            String url;
+            if ("append-key".equals(instruction.getWriterTargetPathType())) {
+                url = this.instruction.getWriterTargetUrl() + instruction.getTestValue().getKey();
+            } else {
+                url = this.instruction.getWriterTargetUrl();
+            }
+
             String httpResult = restClient
                     .method(HttpMethod.valueOf(this.instruction.getWriterTargetMethod()))
                     .uri(url)
+                    .headers(headers -> {
+                        if (this.instruction.getWriterTargetHeader() != null) {
+                            headers.set(this.instruction.getWriterTargetHeader().getKey(),
+                                    this.instruction.getWriterTargetHeader().getValue());
+                        }
+                    })
                     .body(instruction.getTestValue())
                     .retrieve()
                     .body(String.class);
