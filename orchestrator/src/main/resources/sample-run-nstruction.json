@@ -1,0 +1,17 @@
+{
+  "orchestratorUrl": "http://localhost:8080/report/result/",
+  "readerTargetUrl": "https://dbdemo.akamaidemo.work/app/?topic=",
+  "readerTargetMethod": "GET",
+  "writerTargetUrl": "https://dbdemo.akamaidemo.work/put/?topic=",
+  "writerTargetMethod": "PUT",
+  "writer": {
+    "url": "http://localhost:8090/start",
+    "locationName": "chicago"
+  },
+  "readers": [
+    {
+      "url": "http://localhost:8091/start",
+      "locationName": "chicago"
+    }
+  ]
+}
