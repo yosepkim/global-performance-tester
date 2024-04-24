@@ -17,6 +17,8 @@ public class ManagementController {
 
     @PostMapping("/start")
     public String start(@RequestBody RunInstruction instruction) {
+        System.out.println("Request received: " + instruction);
+
         Result result = new Result();
         result.setRunId(instruction.getRunId());
         result.setLocation(System.getProperty("dcLocation"));
@@ -27,7 +29,7 @@ public class ManagementController {
         TimerTask task = new WriterWorker(instruction, result);
 
         System.out.println("Initial Start Time: " + instruction.getStartTime().atZone(ZoneOffset.UTC).toInstant().toEpochMilli());
-        var startTime = Date.from(instruction.getStartTime().plusMillis(30));
+        var startTime = Date.from(instruction.getStartTime().plusMillis(10));
         System.out.println("Processing time:    " + startTime.toInstant().toEpochMilli());
         timer.schedule(task, startTime);
         return "Started";

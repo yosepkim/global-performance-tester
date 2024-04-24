@@ -1,11 +1,9 @@
 package com.gpt.orchestrator.controller;
 
-import com.gpt.orchestrator.model.KeyValue;
-import com.gpt.orchestrator.model.Result;
-import com.gpt.orchestrator.model.Run;
-import com.gpt.orchestrator.model.RunInstruction;
+import com.gpt.orchestrator.model.*;
 import com.gpt.orchestrator.repository.ResultRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.SerializationUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestClient;
 
@@ -15,6 +13,7 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 public class AdminController {
@@ -27,6 +26,26 @@ public class AdminController {
         return repository.findByRunId(runId);
     }
 
+    @GetMapping("run/all/{runId}")
+    public String runAll(@PathVariable String runId, @RequestBody RunInstruction runInstruction) throws IOException, InterruptedException {
+        int runSubId = 1;
+        StringBuilder sb = new StringBuilder();
+        for (Location writer : runInstruction.getReaders()) {
+            String eachRunId = runId + "-" + runSubId;
+
+            RunInstruction eachInstruction = (RunInstruction) SerializationUtils.clone(runInstruction);
+            eachInstruction.setRunId(eachRunId);
+            eachInstruction.getWriter().setUrl(writer.getUrl().replace("8091", "8090"));
+            start(eachRunId, eachInstruction);
+            TimeUnit.SECONDS.sleep(10);
+            String result = analyze(eachRunId);
+            sb.append(result);
+            sb.append("\n");
+            runSubId++;
+        }
+        return sb.toString();
+    }
+
     @GetMapping("analyze/{runId}")
     public String analyze(@PathVariable String runId) {
         List<Result> records = repository.findByRunId(runId);
@@ -36,9 +55,11 @@ public class AdminController {
             Map<String, Instant> locationLatest = new HashMap<>();
 
             Instant writerTimestamp = Instant.now();
+            String writerLocation = "N/A";
             for (Result record : records) {
                 if ("writer".equals(record.getWorkerType())) {
                     writerTimestamp = record.getRuns().get(0).getExecutedTime();
+                    writerLocation = record.getLocation();
                 } else {
                     for (Run run : record.getRuns()) {
                         if (!locationLatest.containsKey(record.getLocation()) || run.getExecutedTime().isAfter(locationLatest.get(record.getLocation()))) {
@@ -47,10 +68,11 @@ public class AdminController {
                     }
                 }
             }
-            ;
 
             StringBuilder sb = new StringBuilder();
-            sb.append("Writer executed time= ");
+            sb.append("[" + runId + "] " );
+            sb.append(writerLocation);
+            sb.append(" writer executed time= ");
             sb.append(writerTimestamp);
             sb.append("\n");
             for (Map.Entry<String, Instant> entry : locationLatest.entrySet()) {
@@ -79,7 +101,7 @@ public class AdminController {
     public String start(@PathVariable String runId, @RequestBody RunInstruction runInstruction) throws IOException {
         String message = "Started";
 
-        runInstruction.setStartTime(Instant.now().plusSeconds(10));
+        runInstruction.setStartTime(Instant.now().plusSeconds(5));
         runInstruction.setRunId(runId);
 
         KeyValue sample = new KeyValue();
@@ -91,23 +113,26 @@ public class AdminController {
 
         try {
             runInstruction.getReaders().forEach(reader -> {
+                System.out.println(runInstruction.getRunId() + ") Reader ================== " + reader);
                 String result = restClient.post()
                         .uri(reader.getUrl())
                         .body(runInstruction)
                         .retrieve()
                         .body(String.class);
-                System.out.println(result);
+                System.out.println("Reader (" + reader.getLocationName() + ") returns " + result + " : " + runInstruction);
             });
 
+            System.out.println(runInstruction.getRunId() + ") Writer ================== " + runInstruction);
             String result = restClient.post()
                     .uri(runInstruction.getWriter().getUrl())
                     .body(runInstruction)
                     .header("content-type", "application/JSON")
                     .retrieve()
                     .body(String.class);
-            System.out.println(result);
+            System.out.println("writer (" + runInstruction.getWriter().getLocationName() + ") returns " + result + " : " + runInstruction);
         } catch (Exception ex) {
             message = ex.getMessage();
+            System.out.println(runId + ") ERROR: " + message);
         }
 
         return message;

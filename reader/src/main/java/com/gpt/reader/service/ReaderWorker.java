@@ -14,7 +14,7 @@ import java.util.TimerTask;
 public class ReaderWorker extends TimerTask {
     private final RunInstruction instruction;
     private final Result result;
-    private RestClient restClient;
+    private final RestClient restClient;
     private int counter;
 
     public ReaderWorker(RunInstruction instruction, Result result) {
@@ -68,7 +68,7 @@ public class ReaderWorker extends TimerTask {
                 this.cancel();
             }
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
+            System.out.println(instruction.getRunId() + ") ERROR: " + ex.getMessage());
         }
     }
 

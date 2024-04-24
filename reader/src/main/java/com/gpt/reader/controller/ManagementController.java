@@ -15,6 +15,7 @@ import java.util.TimerTask;
 public class ManagementController {
     @PostMapping("/start")
     public String start(@RequestBody RunInstruction instruction) {
+        System.out.println("Request received: " + instruction);
         Result result = new Result();
         result.setRunId(instruction.getRunId());
         result.setLocation(System.getProperty("dcLocation"));
@@ -24,7 +25,7 @@ public class ManagementController {
         Timer timer = new Timer();
         TimerTask task = new ReaderWorker(instruction, result);
         var startTime = Date.from(instruction.getStartTime());;
-        timer.scheduleAtFixedRate(task, startTime, 5);
+        timer.scheduleAtFixedRate(task, startTime, 2);
 
         return "Started";
     }

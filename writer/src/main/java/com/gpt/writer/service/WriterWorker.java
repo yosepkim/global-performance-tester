@@ -3,16 +3,12 @@ package com.gpt.writer.service;
 import com.gpt.writer.model.Result;
 import com.gpt.writer.model.Run;
 import com.gpt.writer.model.RunInstruction;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.client.RestClient;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.TimerTask;
-import java.util.function.Consumer;
 
 public class WriterWorker extends TimerTask {
     private final RunInstruction instruction;
