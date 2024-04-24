@@ -34,6 +34,16 @@ public class WriterWorker extends TimerTask {
                 url = this.instruction.getWriterTargetUrl();
             }
 
+            String keyName;
+            if (instruction.getTestKeyOverride() != null && !instruction.getTestKeyOverride().trim().isEmpty()) {
+                keyName = instruction.getTestKeyOverride();
+            } else {
+                keyName = "key";
+            }
+
+            String requestBody = "{\"" + keyName + "\": \"" + instruction.getTestValue().getKey() + "\", \"value\": \""
+                    + instruction.getTestValue().getValue() + "\"}";
+
             String httpResult = restClient
                     .method(HttpMethod.valueOf(this.instruction.getWriterTargetMethod()))
                     .uri(url)
@@ -43,7 +53,7 @@ public class WriterWorker extends TimerTask {
                                     this.instruction.getWriterTargetHeader().getValue());
                         }
                     })
-                    .body(instruction.getTestValue())
+                    .body(requestBody)
                     .retrieve()
                     .body(String.class);
 

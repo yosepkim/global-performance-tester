@@ -30,34 +30,41 @@ public class AdminController {
     @GetMapping("analyze/{runId}")
     public String analyze(@PathVariable String runId) {
         List<Result> records = repository.findByRunId(runId);
+
+        if (records.size() > 0) {
+
             Map<String, Instant> locationLatest = new HashMap<>();
-        Instant writerTimestamp = Instant.now();
-        for (Result record : records) {
-            if ("writer".equals(record.getWorkerType())) {
-                writerTimestamp = record.getRuns().get(0).getExecutedTime();
-            } else {
-                for (Run run : record.getRuns()) {
-                    if (!locationLatest.containsKey(record.getLocation()) || run.getExecutedTime().isAfter(locationLatest.get(record.getLocation()))) {
-                        locationLatest.put(record.getLocation(), run.getExecutedTime());
+
+            Instant writerTimestamp = Instant.now();
+            for (Result record : records) {
+                if ("writer".equals(record.getWorkerType())) {
+                    writerTimestamp = record.getRuns().get(0).getExecutedTime();
+                } else {
+                    for (Run run : record.getRuns()) {
+                        if (!locationLatest.containsKey(record.getLocation()) || run.getExecutedTime().isAfter(locationLatest.get(record.getLocation()))) {
+                            locationLatest.put(record.getLocation(), run.getExecutedTime());
+                        }
                     }
                 }
             }
-        };
+            ;
 
-        StringBuilder sb =  new StringBuilder();
-        sb.append("Writer executed time= ");
-        sb.append(writerTimestamp);
-        sb.append("\n");
-        for (Map.Entry<String,Instant> entry : locationLatest.entrySet()) {
-            sb.append(entry.getKey());
-            sb.append("= ");
-            sb.append(entry.getValue());
-            sb.append(" ----> ");
-            sb.append(entry.getValue().toEpochMilli() - writerTimestamp.toEpochMilli());
-            sb.append(" ms latency");
+            StringBuilder sb = new StringBuilder();
+            sb.append("Writer executed time= ");
+            sb.append(writerTimestamp);
             sb.append("\n");
+            for (Map.Entry<String, Instant> entry : locationLatest.entrySet()) {
+                sb.append(entry.getKey());
+                sb.append("= ");
+                sb.append(entry.getValue());
+                sb.append(" ----> ");
+                sb.append(entry.getValue().toEpochMilli() - writerTimestamp.toEpochMilli());
+                sb.append(" ms latency");
+                sb.append("\n");
+            }
+            return sb.toString();
         }
-        return sb.toString();
+        return "Job has not completed";
     }
 
     @PostMapping("/report/result/{runId}")

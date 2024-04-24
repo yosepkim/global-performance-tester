@@ -33,31 +33,36 @@ public class ReaderWorker extends TimerTask {
                 url = this.instruction.getReaderTargetUrl();
             }
 
-            KeyValue httpResult = restClient
-                    .method(HttpMethod.valueOf(this.instruction.getReaderTargetMethod()))
-                    .uri(url)
-                    .headers(headers -> {
-                        if (this.instruction.getReaderTargetHeader() != null) {
-                            headers.set(this.instruction.getReaderTargetHeader().getKey(),
-                                    this.instruction.getReaderTargetHeader().getValue());
-                        }
-                    })
-                    .retrieve()
-                    .body(KeyValue.class);
+            KeyValue httpResult;
+            try {
+                httpResult = restClient
+                        .method(HttpMethod.valueOf(this.instruction.getReaderTargetMethod()))
+                        .uri(url)
+                        .headers(headers -> {
+                            if (this.instruction.getReaderTargetHeader() != null) {
+                                headers.set(this.instruction.getReaderTargetHeader().getKey(),
+                                        this.instruction.getReaderTargetHeader().getValue());
+                            }
+                        })
+                        .retrieve()
+                        .body(KeyValue.class);
+            } catch (Exception ex) {
+                httpResult = new KeyValue();
+                System.out.println("RUN FAILED: " + instruction.getTestValue() + " - " + ex.getMessage());
+            }
 
             Run run = new Run();
             run.setExecutedTime(Instant.now());
             result.getRuns().add(run);
             counter++;
 
-            System.out.println("RUN: " + instruction.getTestValue() + " - " + result);
+            // System.out.println("RUN: " + instruction.getTestValue() + " - " + result);
 
-            if (counter > 100) {
+            if (counter > 300) {
                 counter = 0;
                 System.out.println("INCOMPLETE: Didn't get the data");
                 this.cancel();
-            } else if (Objects.equals(instruction.getTestValue().getKey(), httpResult.getKey())
-                    && Objects.equals(instruction.getTestValue().getValue(), httpResult.getValue())) {
+            } else if (Objects.equals(instruction.getTestValue().getValue(), httpResult.getValue())) {
                 String orchestratorResponse = reportResult(instruction);
                 System.out.println("COMPLETE: " + orchestratorResponse);
                 this.cancel();

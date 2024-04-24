@@ -19,5 +19,6 @@
       "url": "http://localhost:8091/start",
       "locationName": "chicago"
     }
-  ]
+  ],
+  "testKeyOverride": "_key"
 }

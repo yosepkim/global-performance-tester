@@ -24,7 +24,7 @@ public class ManagementController {
         Timer timer = new Timer();
         TimerTask task = new ReaderWorker(instruction, result);
         var startTime = Date.from(instruction.getStartTime());;
-        timer.scheduleAtFixedRate(task, startTime, 10);
+        timer.scheduleAtFixedRate(task, startTime, 5);
 
         return "Started";
     }

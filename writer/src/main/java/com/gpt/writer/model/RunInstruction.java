@@ -19,4 +19,5 @@ public class RunInstruction {
     private KeyValue writerTargetHeader;
     private Instant startTime;
     private KeyValue testValue;
+    private String testKeyOverride;
 }

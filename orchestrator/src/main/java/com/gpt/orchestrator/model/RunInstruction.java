@@ -26,6 +26,7 @@ public class RunInstruction {
     private KeyValue writerTargetHeader;
     private Instant startTime;
     private KeyValue testValue;
+    private String testKeyOverride;
     private Location writer;
     private List<Location> readers = new ArrayList<>();
 }
