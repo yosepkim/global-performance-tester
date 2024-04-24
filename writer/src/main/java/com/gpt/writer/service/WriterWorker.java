@@ -40,6 +40,8 @@ public class WriterWorker extends TimerTask {
             String requestBody = "{\"" + keyName + "\": \"" + instruction.getTestValue().getKey() + "\", \"value\": \""
                     + instruction.getTestValue().getValue() + "\"}";
 
+
+
             String httpResult = restClient
                     .method(HttpMethod.valueOf(this.instruction.getWriterTargetMethod()))
                     .uri(url)
@@ -48,6 +50,7 @@ public class WriterWorker extends TimerTask {
                             headers.set(this.instruction.getWriterTargetHeader().getKey(),
                                     this.instruction.getWriterTargetHeader().getValue());
                         }
+                        headers.set("content-type", "application/JSON");
                     })
                     .body(requestBody)
                     .retrieve()
