@@ -16,5 +16,6 @@ public class Result {
     private String location;
     private String workerType;
     private Instant initialStartTime;
+    private boolean completed = false;
     private List<Run> runs = new ArrayList();
 }

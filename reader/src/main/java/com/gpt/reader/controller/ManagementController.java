@@ -2,6 +2,7 @@ package com.gpt.reader.controller;
 
 import com.gpt.reader.model.Result;
 import com.gpt.reader.model.RunInstruction;
+import com.gpt.reader.service.ReaderScheduler;
 import com.gpt.reader.service.ReaderWorker;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,9 +24,9 @@ public class ManagementController {
         result.setInitialStartTime(instruction.getStartTime());
 
         Timer timer = new Timer();
-        TimerTask task = new ReaderWorker(instruction, result);
+        ReaderScheduler scheduler = new ReaderScheduler(instruction, result);
         var startTime = Date.from(instruction.getStartTime());;
-        timer.scheduleAtFixedRate(task, startTime, 2);
+        timer.scheduleAtFixedRate(scheduler, startTime, 5);
 
         return "Started";
     }

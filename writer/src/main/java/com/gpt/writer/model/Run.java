@@ -10,5 +10,6 @@ import java.time.Instant;
 @NoArgsConstructor
 @Data
 public class Run {
+    private Instant startTime;
     private Instant executedTime;
 }

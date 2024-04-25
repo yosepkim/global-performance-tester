@@ -9,21 +9,19 @@ import org.springframework.web.client.RestClient;
 
 import java.time.Instant;
 import java.util.Objects;
-import java.util.TimerTask;
 
-public class ReaderWorker extends TimerTask {
+public class ReaderWorker implements Runnable {
     private final RunInstruction instruction;
     private final Result result;
     private final RestClient restClient;
-    private int counter;
 
     public ReaderWorker(RunInstruction instruction, Result result) {
         this.instruction = instruction;
         this.result = result;
-        this.counter = 0;
         this.restClient = RestClient.create();
     }
 
+    @Override
     public void run() {
         try {
             String url;
@@ -34,7 +32,9 @@ public class ReaderWorker extends TimerTask {
             }
 
             KeyValue httpResult;
+            Run run = new Run();
             try {
+                run.setStartTime(Instant.now());
                 httpResult = restClient
                         .method(HttpMethod.valueOf(this.instruction.getReaderTargetMethod()))
                         .uri(url)
@@ -51,34 +51,14 @@ public class ReaderWorker extends TimerTask {
                 System.out.println("RUN FAILED: " + instruction.getTestValue() + " - " + ex.getMessage());
             }
 
-            Run run = new Run();
             run.setExecutedTime(Instant.now());
             result.getRuns().add(run);
-            counter++;
 
-            // System.out.println("RUN: " + instruction.getTestValue() + " - " + result);
-
-            if (counter > 300) {
-                counter = 0;
-                System.out.println("INCOMPLETE: Didn't get the data");
-                this.cancel();
-            } else if (Objects.equals(instruction.getTestValue().getValue(), httpResult.getValue())) {
-                String orchestratorResponse = reportResult(instruction);
-                System.out.println("COMPLETE: " + orchestratorResponse);
-                this.cancel();
+            if (Objects.equals(instruction.getTestValue().getValue(), httpResult.getValue())) {
+                result.setCompleted(true);
             }
         } catch (Exception ex) {
             System.out.println(instruction.getRunId() + ") ERROR: " + ex.getMessage());
         }
-    }
-
-    private String reportResult(RunInstruction instruction) {
-        String orchestratorUrl = instruction.getOrchestratorUrl() + result.getRunId();
-        return restClient
-                .method(HttpMethod.POST)
-                .uri(orchestratorUrl)
-                .body(result)
-                .retrieve()
-                .body(String.class);
     }
 }

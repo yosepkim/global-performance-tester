@@ -51,19 +51,18 @@ public class AdminController {
         List<Result> records = repository.findByRunId(runId);
 
         if (records.size() > 0) {
-
             Map<String, Instant> locationLatest = new HashMap<>();
 
             Instant writerTimestamp = Instant.now();
             String writerLocation = "N/A";
             for (Result record : records) {
                 if ("writer".equals(record.getWorkerType())) {
-                    writerTimestamp = record.getRuns().get(0).getExecutedTime();
+                    writerTimestamp = record.getRuns().get(0).getStartTime();
                     writerLocation = record.getLocation();
                 } else {
                     for (Run run : record.getRuns()) {
-                        if (!locationLatest.containsKey(record.getLocation()) || run.getExecutedTime().isAfter(locationLatest.get(record.getLocation()))) {
-                            locationLatest.put(record.getLocation(), run.getExecutedTime());
+                        if (!locationLatest.containsKey(record.getLocation()) || run.getStartTime().isAfter(locationLatest.get(record.getLocation()))) {
+                            locationLatest.put(record.getLocation(), run.getStartTime());
                         }
                     }
                 }

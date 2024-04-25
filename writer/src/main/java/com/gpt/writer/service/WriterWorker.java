@@ -40,8 +40,8 @@ public class WriterWorker extends TimerTask {
             String requestBody = "{\"" + keyName + "\": \"" + instruction.getTestValue().getKey() + "\", \"value\": \""
                     + instruction.getTestValue().getValue() + "\"}";
 
-
-
+            Run run = new Run();
+            run.setStartTime(Instant.now());
             String httpResult = restClient
                     .method(HttpMethod.valueOf(this.instruction.getWriterTargetMethod()))
                     .uri(url)
@@ -58,7 +58,7 @@ public class WriterWorker extends TimerTask {
 
             System.out.println("RUN: " + instruction.getTestValue() + " - " + httpResult);
 
-            Run run = new Run();
+
             run.setExecutedTime(Instant.now());
 
             System.out.println("Processing time:    " + run.getExecutedTime().atZone(ZoneOffset.UTC).toInstant().toEpochMilli());
