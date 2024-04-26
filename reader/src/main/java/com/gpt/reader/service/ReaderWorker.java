@@ -8,6 +8,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.web.client.RestClient;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Objects;
 
 public class ReaderWorker implements Runnable {
@@ -34,7 +35,7 @@ public class ReaderWorker implements Runnable {
             KeyValue httpResult;
             Run run = new Run();
             try {
-                run.setStartTime(Instant.now());
+                run.setStartTime(Instant.now().atZone(ZoneOffset.UTC).toInstant());
                 httpResult = restClient
                         .method(HttpMethod.valueOf(this.instruction.getReaderTargetMethod()))
                         .uri(url)
@@ -51,7 +52,7 @@ public class ReaderWorker implements Runnable {
                 System.out.println("RUN FAILED: " + instruction.getTestValue() + " - " + ex.getMessage());
             }
 
-            run.setExecutedTime(Instant.now());
+            run.setExecutedTime(Instant.now().atZone(ZoneOffset.UTC).toInstant());
             result.getRuns().add(run);
 
             if (Objects.equals(instruction.getTestValue().getValue(), httpResult.getValue())) {

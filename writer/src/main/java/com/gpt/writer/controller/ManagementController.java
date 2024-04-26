@@ -29,7 +29,7 @@ public class ManagementController {
         TimerTask task = new WriterWorker(instruction, result);
 
         System.out.println("Initial Start Time: " + instruction.getStartTime().atZone(ZoneOffset.UTC).toInstant().toEpochMilli());
-        var startTime = Date.from(instruction.getStartTime().plusMillis(10));
+        var startTime = Date.from(instruction.getStartTime().atZone(ZoneOffset.UTC).toInstant().plusMillis(210));
         System.out.println("Processing time:    " + startTime.toInstant().toEpochMilli());
         timer.schedule(task, startTime);
         return "Started";

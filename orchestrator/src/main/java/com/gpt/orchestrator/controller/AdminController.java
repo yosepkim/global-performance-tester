@@ -1,5 +1,6 @@
 package com.gpt.orchestrator.controller;
 
+import com.gpt.orchestrator.model.MultiRunInstruction;
 import com.gpt.orchestrator.model.*;
 import com.gpt.orchestrator.repository.ResultRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,15 +28,16 @@ public class AdminController {
     }
 
     @GetMapping("run/all/{runId}")
-    public String runAll(@PathVariable String runId, @RequestBody RunInstruction runInstruction) throws IOException, InterruptedException {
+    public String runAll(@PathVariable String runId, @RequestBody MultiRunInstruction multiRunInstruction) throws IOException, InterruptedException {
         int runSubId = 1;
         StringBuilder sb = new StringBuilder();
-        for (Location writer : runInstruction.getReaders()) {
+        for (Location writer : multiRunInstruction.getWriters()) {
             String eachRunId = runId + "-" + runSubId;
 
-            RunInstruction eachInstruction = (RunInstruction) SerializationUtils.clone(runInstruction);
+            RunInstruction eachInstruction = (RunInstruction) SerializationUtils.clone(multiRunInstruction);
             eachInstruction.setRunId(eachRunId);
-            eachInstruction.getWriter().setUrl(writer.getUrl().replace("8091", "8090"));
+            eachInstruction.getWriter().setUrl(writer.getUrl());
+            eachInstruction.getWriter().setLocationName(writer.getLocationName());
             start(eachRunId, eachInstruction);
             TimeUnit.SECONDS.sleep(10);
             String result = analyze(eachRunId);
@@ -57,19 +59,21 @@ public class AdminController {
             String writerLocation = "N/A";
             for (Result record : records) {
                 if ("writer".equals(record.getWorkerType())) {
-                    writerTimestamp = record.getRuns().get(0).getStartTime();
+                    writerTimestamp = record.getRuns().get(0).getExecutedTime();
                     writerLocation = record.getLocation();
                 } else {
                     for (Run run : record.getRuns()) {
-                        if (!locationLatest.containsKey(record.getLocation()) || run.getStartTime().isAfter(locationLatest.get(record.getLocation()))) {
-                            locationLatest.put(record.getLocation(), run.getStartTime());
+                        if (!locationLatest.containsKey(record.getLocation()) || run.getExecutedTime().isAfter(locationLatest.get(record.getLocation()))) {
+                            locationLatest.put(record.getLocation(), run.getExecutedTime());
                         }
                     }
                 }
             }
 
             StringBuilder sb = new StringBuilder();
-            sb.append("[" + runId + "] " );
+            sb.append("[");
+            sb.append(runId);
+            sb.append("]");
             sb.append(writerLocation);
             sb.append(" writer executed time= ");
             sb.append(writerTimestamp);
@@ -91,8 +95,7 @@ public class AdminController {
     @PostMapping("/report/result/{runId}")
     public String reportResult(@PathVariable String runId, @RequestBody Result result) throws IOException {
         repository.save(result);
-        System.out.println("DATA: " + result.toString());
-        System.out.println("Time: " + result.getRuns().get(0).getExecutedTime().atZone(ZoneOffset.UTC).toInstant().toEpochMilli());
+        System.out.println("Report Received: " + result.toString());
         return "Success";
     }
 
@@ -100,7 +103,7 @@ public class AdminController {
     public String start(@PathVariable String runId, @RequestBody RunInstruction runInstruction) throws IOException {
         String message = "Started";
 
-        runInstruction.setStartTime(Instant.now().plusSeconds(5));
+        runInstruction.setStartTime(Instant.now().atZone(ZoneOffset.UTC).toInstant().plusSeconds(5));
         runInstruction.setRunId(runId);
 
         KeyValue sample = new KeyValue();
