@@ -31,29 +31,29 @@ public class AdminController {
     public String runAll(@PathVariable String runId, @RequestBody MultiRunInstruction multiRunInstruction) throws IOException, InterruptedException {
         int runSubId = 1;
         StringBuilder sb = new StringBuilder();
+        int i = 0;
         for (Location writer : multiRunInstruction.getWriters()) {
             String eachRunId = runId + "-" + runSubId;
-
             RunInstruction eachInstruction = (RunInstruction) SerializationUtils.clone(multiRunInstruction);
             eachInstruction.setRunId(eachRunId);
             eachInstruction.getWriter().setUrl(writer.getUrl());
             eachInstruction.getWriter().setLocationName(writer.getLocationName());
             start(eachRunId, eachInstruction);
             TimeUnit.SECONDS.sleep(10);
-            String result = analyze(eachRunId);
+            String result = analyze(eachRunId, i == 0);
             sb.append(result);
-            sb.append("\n");
             runSubId++;
+            i++;
         }
         return sb.toString();
     }
 
     @GetMapping("analyze/{runId}")
-    public String analyze(@PathVariable String runId) {
+    public String analyze(@PathVariable String runId, boolean printHeader) {
         List<Result> records = repository.findByRunId(runId);
 
         if (records.size() > 0) {
-            Map<String, Instant> locationLatest = new HashMap<>();
+            Map<String, Run> locationLatest = new HashMap<>();
 
             Instant writerTimestamp = Instant.now();
             String writerLocation = "N/A";
@@ -63,28 +63,36 @@ public class AdminController {
                     writerLocation = record.getLocation();
                 } else {
                     for (Run run : record.getRuns()) {
-                        if (!locationLatest.containsKey(record.getLocation()) || run.getExecutedTime().isAfter(locationLatest.get(record.getLocation()))) {
-                            locationLatest.put(record.getLocation(), run.getExecutedTime());
+                        if (!locationLatest.containsKey(record.getLocation()) || run.getExecutedTime().isAfter(locationLatest.get(record.getLocation()).getExecutedTime())) {
+                            locationLatest.put(record.getLocation(), run);
                         }
                     }
                 }
             }
 
             StringBuilder sb = new StringBuilder();
-            sb.append("[");
-            sb.append(runId);
-            sb.append("]");
-            sb.append(writerLocation);
-            sb.append(" writer executed time= ");
-            sb.append(writerTimestamp);
-            sb.append("\n");
-            for (Map.Entry<String, Instant> entry : locationLatest.entrySet()) {
+            if (printHeader) {
+                sb.append("runId,writerLocation,writerExecutedTime,readerLocation,readerStartTime,readerExecutedTime,readerRequestDuration,latencyByStartTime,latencyByExecutedTime");
+                sb.append("\n");
+            }
+            for (Map.Entry<String, Run> entry : locationLatest.entrySet()) {
+                sb.append(runId);
+                sb.append(",");
+                sb.append(writerLocation);
+                sb.append(",");
+                sb.append(writerTimestamp);
+                sb.append(",");
                 sb.append(entry.getKey());
-                sb.append("= ");
-                sb.append(entry.getValue());
-                sb.append(" ----> ");
-                sb.append(entry.getValue().toEpochMilli() - writerTimestamp.toEpochMilli());
-                sb.append(" ms latency");
+                sb.append(",");
+                sb.append(entry.getValue().getStartTime());
+                sb.append(",");
+                sb.append(entry.getValue().getExecutedTime());
+                sb.append(",");
+                sb.append(entry.getValue().getExecutedTime().toEpochMilli() - entry.getValue().getStartTime().toEpochMilli());
+                sb.append(",");
+                sb.append(entry.getValue().getStartTime().toEpochMilli() - writerTimestamp.toEpochMilli());
+                sb.append(",");
+                sb.append(entry.getValue().getExecutedTime().toEpochMilli() - writerTimestamp.toEpochMilli());
                 sb.append("\n");
             }
             return sb.toString();
