@@ -1,6 +1,5 @@
 package com.gpt.orchestrator.controller;
 
-import com.gpt.orchestrator.model.MultiRunInstruction;
 import com.gpt.orchestrator.model.*;
 import com.gpt.orchestrator.repository.ResultRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,16 +50,19 @@ public class AdminController {
     @GetMapping("analyze/{runId}")
     public String analyze(@PathVariable String runId, boolean printHeader) {
         List<Result> records = repository.findByRunId(runId);
-
         if (records.size() > 0) {
             Map<String, Run> locationLatest = new HashMap<>();
 
             Instant writerTimestamp = Instant.now();
+            Instant writerStartTime = Instant.now();
             String writerLocation = "N/A";
+            long medianWriterExecutedTime = 0;
             for (Result record : records) {
                 if ("writer".equals(record.getWorkerType())) {
+                    writerStartTime = record.getRuns().get(0).getStartTime();
                     writerTimestamp = record.getRuns().get(0).getExecutedTime();
                     writerLocation = record.getLocation();
+                    medianWriterExecutedTime = calculateMedianExecuteTime(record.getRuns().get(0).getStartTime(), record.getRuns().get(0).getExecutedTime());
                 } else {
                     for (Run run : record.getRuns()) {
                         if (!locationLatest.containsKey(record.getLocation()) || run.getExecutedTime().isAfter(locationLatest.get(record.getLocation()).getExecutedTime())) {
@@ -72,7 +74,7 @@ public class AdminController {
 
             StringBuilder sb = new StringBuilder();
             if (printHeader) {
-                sb.append("runId,writerLocation,writerExecutedTime,readerLocation,readerStartTime,readerExecutedTime,readerRequestDuration,latencyByStartTime,latencyByExecutedTime");
+                sb.append("runId,writerLocation,readerLocation,readerRequestDuration,latencyByStartTime,latencyByExecutedTime,normalizedLatency,writerStartTime,writerExecutedTime,readerStartTime,readerExecutedTime");
                 sb.append("\n");
             }
             for (Map.Entry<String, Run> entry : locationLatest.entrySet()) {
@@ -80,19 +82,25 @@ public class AdminController {
                 sb.append(",");
                 sb.append(writerLocation);
                 sb.append(",");
-                sb.append(writerTimestamp);
-                sb.append(",");
                 sb.append(entry.getKey());
                 sb.append(",");
-                sb.append(entry.getValue().getStartTime());
-                sb.append(",");
-                sb.append(entry.getValue().getExecutedTime());
-                sb.append(",");
-                sb.append(entry.getValue().getExecutedTime().toEpochMilli() - entry.getValue().getStartTime().toEpochMilli());
+                long readerRequestDuration = entry.getValue().getExecutedTime().toEpochMilli() - entry.getValue().getStartTime().toEpochMilli();
+                sb.append(readerRequestDuration);
                 sb.append(",");
                 sb.append(entry.getValue().getStartTime().toEpochMilli() - writerTimestamp.toEpochMilli());
                 sb.append(",");
                 sb.append(entry.getValue().getExecutedTime().toEpochMilli() - writerTimestamp.toEpochMilli());
+                sb.append(",");
+                long medianReaderExecuteTime = calculateMedianExecuteTime(entry.getValue().getStartTime(), entry.getValue().getExecutedTime());
+                sb.append(medianReaderExecuteTime - medianWriterExecutedTime);
+                sb.append(",");
+                sb.append(writerStartTime);
+                sb.append(",");
+                sb.append(writerTimestamp);
+                sb.append(",");
+                sb.append(entry.getValue().getStartTime());
+                sb.append(",");
+                sb.append(entry.getValue().getExecutedTime());
                 sb.append("\n");
             }
             return sb.toString();
@@ -147,4 +155,10 @@ public class AdminController {
 
         return message;
     }
+
+    private long calculateMedianExecuteTime(Instant startTime, Instant endTime) {
+        long requestDuration = endTime.toEpochMilli() - startTime.toEpochMilli();
+        return endTime.toEpochMilli() - (requestDuration / 2);
+    }
+
 }
