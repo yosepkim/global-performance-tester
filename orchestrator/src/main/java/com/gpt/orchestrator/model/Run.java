@@ -20,4 +20,5 @@ public class Run {
     private Long id;
     private Instant startTime;
     private Instant executedTime;
+    private Instant databaseInsertTime;
 }

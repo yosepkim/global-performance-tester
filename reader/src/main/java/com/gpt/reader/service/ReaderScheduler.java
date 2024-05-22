@@ -40,10 +40,12 @@ public class ReaderScheduler extends TimerTask {
             this.cancel();
             this.initiateShutdown();
         } else if (result.isCompleted()) {
-            String orchestratorResponse = reportResult(instruction);
-            System.out.println("COMPLETE: " + orchestratorResponse);
             this.cancel();
             this.initiateShutdown();
+
+            System.out.println("FINAL REPORT SIZE: " + result.getRuns().size());
+            String orchestratorResponse = reportResult(instruction);
+            System.out.println("COMPLETE: " + orchestratorResponse);
         }
         this.executorService.execute(new ReaderWorker(instruction, result));
         runCounter++;

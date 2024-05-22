@@ -18,6 +18,8 @@ public class RunInstruction {
     private String readerTargetMethod;
     private String readerTargetPathType;
     private KeyValue readerTargetHeader;
+    private String readerDatabaseInsertTimeAttributeName;
+    private String readerTargetResponseEmbeddedAttributeName;
     private String writerTargetUrl;
     private String writerTargetMethod;
     private Instant startTime;

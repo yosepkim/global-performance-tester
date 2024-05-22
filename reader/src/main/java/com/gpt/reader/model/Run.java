@@ -12,4 +12,5 @@ import java.time.Instant;
 public class Run {
     private Instant startTime;
     private Instant executedTime;
+    private Instant databaseInsertTime;
 }

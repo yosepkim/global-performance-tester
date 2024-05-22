@@ -4,6 +4,8 @@ import com.gpt.reader.model.KeyValue;
 import com.gpt.reader.model.Result;
 import com.gpt.reader.model.Run;
 import com.gpt.reader.model.RunInstruction;
+import io.micrometer.common.util.StringUtils;
+import org.json.JSONObject;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.client.RestClient;
 
@@ -32,11 +34,11 @@ public class ReaderWorker implements Runnable {
                 url = this.instruction.getReaderTargetUrl();
             }
 
-            KeyValue httpResult;
+            KeyValue httpResult  = new KeyValue();
             Run run = new Run();
             try {
                 run.setStartTime(Instant.now().atZone(ZoneOffset.UTC).toInstant());
-                httpResult = restClient
+                String response = restClient
                         .method(HttpMethod.valueOf(this.instruction.getReaderTargetMethod()))
                         .uri(url)
                         .headers(headers -> {
@@ -46,17 +48,31 @@ public class ReaderWorker implements Runnable {
                             }
                         })
                         .retrieve()
-                        .body(KeyValue.class);
+                        .body(String.class);
+
+                run.setExecutedTime(Instant.now().atZone(ZoneOffset.UTC).toInstant());
+
+                JSONObject jsonResponse = new JSONObject(response);
+                if (this.instruction.getReaderTargetResponseEmbeddedAttributeName() != null) {
+                    JSONObject jsonObject = jsonResponse.getJSONObject(this.instruction.getReaderTargetResponseEmbeddedAttributeName());
+                    httpResult.setValue(jsonObject.getString("value"));
+                } else {
+                    httpResult.setValue(jsonResponse.getString("value"));
+                }
+
+                if (StringUtils.isNotBlank(this.instruction.getReaderDatabaseInsertTimeAttributeName())) {
+                    run.setDatabaseInsertTime(Instant.ofEpochMilli(jsonResponse.getLong(this.instruction.getReaderDatabaseInsertTimeAttributeName())));
+                    System.out.println("DB Insert time:    " + run.getDatabaseInsertTime().atZone(ZoneOffset.UTC).toInstant().toEpochMilli());
+                }
+
+                System.out.println(result.getRuns().size() + " TEST VALUE= " + instruction.getTestValue() + " - " + httpResult.getValue());
+                if (Objects.equals(instruction.getTestValue().getValue(), httpResult.getValue())) {
+                    result.getRuns().add(run);
+                    result.setCompleted(true);
+                }
+
             } catch (Exception ex) {
-                httpResult = new KeyValue();
                 System.out.println("RUN FAILED: " + instruction.getTestValue() + " - " + ex.getMessage());
-            }
-
-            run.setExecutedTime(Instant.now().atZone(ZoneOffset.UTC).toInstant());
-            result.getRuns().add(run);
-
-            if (Objects.equals(instruction.getTestValue().getValue(), httpResult.getValue())) {
-                result.setCompleted(true);
             }
         } catch (Exception ex) {
             System.out.println(instruction.getRunId() + ") ERROR: " + ex.getMessage());

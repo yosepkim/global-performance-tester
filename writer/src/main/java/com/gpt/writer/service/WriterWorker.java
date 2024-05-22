@@ -58,10 +58,9 @@ public class WriterWorker extends TimerTask {
 
             System.out.println("RUN: " + instruction.getTestValue() + " - " + httpResult);
 
-
             run.setExecutedTime(Instant.now().atZone(ZoneOffset.UTC).toInstant());
 
-            System.out.println("Writing time:    " + run.getExecutedTime().atZone(ZoneOffset.UTC).toInstant().toEpochMilli());
+            System.out.println("Executed time:    " + run.getExecutedTime().atZone(ZoneOffset.UTC).toInstant().toEpochMilli());
 
             result.getRuns().add(run);
 

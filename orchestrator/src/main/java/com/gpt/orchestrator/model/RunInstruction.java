@@ -21,6 +21,8 @@ public class RunInstruction implements Serializable {
     private String readerTargetMethod;
     private String readerTargetPathType;
     private KeyValue readerTargetHeader;
+    private String readerTargetResponseEmbeddedAttributeName;
+    private String readerDatabaseInsertTimeAttributeName;
     private String writerTargetUrl;
     private String writerTargetMethod;
     private String writerTargetPathType;
